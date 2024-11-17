@@ -82,7 +82,7 @@ class ReforgerStats(commands.Bot):
     if self.ssh is None or self.sftp is None: self.sftp, self.ssh = createSSHClient(self.config)
 
     remote_path = "/profile/logs"
-    if self.log_dir == "": self.log_dir = await getLatestDir(self.sftp, remote_path)
+    if self.log_dir == "": self.log_dir = getLatestDir(self.sftp, remote_path)
 
     # Read data
     file:  SFTPFile  = await self.sftp.open(f"{remote_path}/{self.log_dir}/console.log")
