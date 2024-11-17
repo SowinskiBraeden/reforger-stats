@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from discord.ext import commands
 from discord import app_commands
 from discord import Interaction
