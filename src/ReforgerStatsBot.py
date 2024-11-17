@@ -48,7 +48,7 @@ class ReforgerStats(commands.Bot):
       exception = f"{type(e).__name__}: {e}"
       print(exception)
 
-  async def createLeaderboardEmbed(players: list[dict]) -> dict:
+  async def createLeaderboardEmbed(self, players: list[dict]) -> dict:
     sorted_players = sorted(players, key=lambda a: a["kills"], reverse=True)
     description = ""
     rank = 1
