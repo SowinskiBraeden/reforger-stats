@@ -65,7 +65,7 @@ class ReforgerStats(commands.Bot):
 
   async def webhookSend(self: commands.Bot, content: dict) -> str | None:
     params = { "wait": True }
-    resp = await requests.post(f"{self.config.WEBHOOK}", json=content, params=params)
+    resp = requests.post(f"{self.config.WEBHOOK}", json=content, params=params)
     return None if resp.status_code != 200 else resp.json()["id"]
 
   async def webhookDeleteMessage(self) -> None:
