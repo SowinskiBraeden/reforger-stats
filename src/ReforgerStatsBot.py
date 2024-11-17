@@ -93,7 +93,7 @@ class ReforgerStats(commands.Bot):
     file.close()
 
     # Send leaderboard embeds via webhook
-    content: dict = self.createLeaderboardEmbed(self.players)
+    content: dict = await self.createLeaderboardEmbed(self.players)
     if self.message_id == "": self.webhookSend(content)
     else: self.webhookUpdateMessage(content)
 
