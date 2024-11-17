@@ -18,7 +18,7 @@ class Event(app_commands.Group):
   @app_commands.command(name="start", description="Start an event leaderboard")
   async def start(self, interaction: Interaction) -> None:
     if not self.hasPermission(interaction.user): await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
-    if self.bot._running: await interaction.response.send_message("Event already started")    
+    if self.bot._running: await interaction.response.send_message("Event already started", ephemeral=True) 
     self.bot.scrape_file.start()
     self.bot._running = True
     await interaction.response.send_message("Starting new event leaderboard...", ephemeral=True)
