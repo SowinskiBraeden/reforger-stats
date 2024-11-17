@@ -85,10 +85,10 @@ class ReforgerStats(commands.Bot):
     if self.log_dir == "": self.log_dir = getLatestDir(self.sftp, remote_path)
 
     # Read data
-    file:  SFTPFile  = await self.sftp.open(f"{remote_path}/{self.log_dir}/console.log")
-    lines: list[str] = await file.readlines()
+    file:  SFTPFile  = self.sftp.open(f"{remote_path}/{self.log_dir}/console.log")
+    lines: list[str] = file.readlines()
     if self.log_index == -1: self.log_index = len(lines) - 1
-    self.players, self.gamertags = await readLogFromIndex(self.log_index, lines, self.players, self.gamertags)
+    self.players, self.gamertags = readLogFromIndex(self.log_index, lines, self.players, self.gamertags)
     self.log_index = len(lines) - 1
     file.close()
 
