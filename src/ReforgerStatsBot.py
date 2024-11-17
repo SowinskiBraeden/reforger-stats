@@ -82,20 +82,20 @@ class ReforgerStats(commands.Bot):
     if self.ssh is None or self.sftp is None: self.sftp, self.ssh = createSSHClient(self.config)
 
     remote_path = "/profile/logs"
-    if self.log_dir == "": self.log_dir = getLatestDir(self.sftp, remote_path)
+    if self.log_dir == "": self.log_dir = await getLatestDir(self.sftp, remote_path)
 
     # Read data
-    file:  SFTPFile  = self.sftp.open(f"{remote_path}/{self.log_dir}/console.log")
-    lines: list[str] = file.readlines()
+    file:  SFTPFile  = await self.sftp.open(f"{remote_path}/{self.log_dir}/console.log")
+    lines: list[str] = await file.readlines()
     if self.log_index == -1: self.log_index = len(lines) - 1
-    self.players, self.gamertags = readLogFromIndex(self.log_index, lines, self.players, self.gamertags)
+    self.players, self.gamertags = await readLogFromIndex(self.log_index, lines, self.players, self.gamertags)
     self.log_index = len(lines) - 1
     file.close()
 
     # Send leaderboard embeds via webhook
     content: dict = await self.createLeaderboardEmbed(self.players)
-    if self.message_id == "": self.webhookSend(content)
-    else: self.webhookUpdateMessage(content)
+    if self.message_id == "": await self.webhookSend(content)
+    else: await self.webhookUpdateMessage(content)
 
     # Close SSH && SFTP sessions and file
     self.sftp.close()
