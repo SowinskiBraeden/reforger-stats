@@ -16,8 +16,8 @@ class Templates:
 
 # Get initial players data
 def getPlayers(bot: commands.Bot, logs: list[str]) -> None:
-  gt_data = match(Templates.Gamertag, logs[i])
   for i in range(0, len(logs)):
+    gt_data = match(Templates.Gamertag, logs[i])
     # Generate new player data or update connections/IP info
     if gt_data is not None:
       ip_data = match(Templates.IpAddress, logs[i+1])
