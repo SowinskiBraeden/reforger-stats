@@ -51,16 +51,15 @@ class ReforgerStats(commands.Bot):
 
   async def createLeaderboardEmbed(self, players: list[dict]) -> dict:
     sorted_players = sorted(players, key=lambda a: a["kills"], reverse=True)
-    current: int = round(time())
-    description = f"From <t:{self.start_time}> to <t:{current}>"
+    description = f"-# from <t:{self.start_time}> to <t:{round(time())}>\n"
     rank = 1
     for player in sorted_players:
-      description += f"> **{rank}.** {player['gamertag']}\n`{player['KDR']}` KDR - `{player['kills']}` Kill{'s' if player['kills'] > 1 or player['kills'] == 0 else ''} `{player['deaths']}` Death{'s' if player['deaths'] > 1 or player['deaths'] == 0 else ''}\n"
+      description += f"**{rank}. {player['gamertag']}**{player['KDR']} KDR - {player['kills']} Kill{'s' if player['kills'] > 1 or player['kills'] == 0 else ''} - {player['deaths']} Death{'s' if player['deaths'] > 1 or player['deaths'] == 0 else ''}\n"
       rank += 1
     
     return {
       "embeds": [{
-        "title": "Leaderboard",
+        "title": f"Leaderboard",
         "description": description
       }]
     }
