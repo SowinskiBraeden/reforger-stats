@@ -27,12 +27,12 @@ class Event(app_commands.Group):
   async def stop(self, interaction: Interaction) -> None:
     if not self.hasPermission(interaction.user): await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
     if not self.bot._running: await interaction.response.send_message("Event already stopped", ephemeral=True)
-    self.bot.scrape_file.stop()
 
     # Reset trackers
     self.bot._running   = False
     self.bot.log_file   = ""
     self.bot.log_index  = -1
+    self.bot.start_time = -1
     self.bot.players    = []
     self.bot.gamertags  = []
     self.bot.message_id = ""
@@ -43,6 +43,7 @@ class Event(app_commands.Group):
     self.ssh  = None
     
     await interaction.response.send_message("Stopping event leaderboard...", ephemeral=True)
+    self.bot.scrape_file.stop()
 
 async def setup(bot: commands.Bot) -> None:
   bot.tree.add_command(Event(bot, name="event", description="start or stop an event leaderboard"))

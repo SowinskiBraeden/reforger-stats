@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord.ext import tasks
 from discord import Object
 from os import listdir, getcwd
+from time import time
 import requests
 
 from handlers.sftp import createSSHClient
@@ -18,6 +19,7 @@ class ReforgerStats(commands.Bot):
     self._running:   bool       = False
     self.log_dir:    str        = ""
     self.log_index:  int        = -1
+    self.start_time: int        = -1
     self.message_id: str        = ""
     self.players:    list[dict] = []
     self.gamertags:  list[str]  = []
@@ -49,10 +51,11 @@ class ReforgerStats(commands.Bot):
 
   async def createLeaderboardEmbed(self, players: list[dict]) -> dict:
     sorted_players = sorted(players, key=lambda a: a["kills"], reverse=True)
-    description = ""
+    current: int = round(time())
+    description = f"From <t:{self.start_time}> to <t:{current}>"
     rank = 1
     for player in sorted_players:
-      description += f"> **{rank}.** {player['gamertag']}\n> ***Kills*** {player['kills']}\n> ***Deaths*** {player['deaths']}\n\n"
+      description += f"> **{rank}.** {player['gamertag']}\n`{player['KDR']}` KDR - `{player['kills']}` Kill{'s' if player['kills'] > 1 or player['kills'] == 0 else ''} `{player['deaths']}` Death{'s' if player['deaths'] > 1 or player['deaths'] == 0 else ''}\n"
       rank += 1
     
     return {
@@ -90,6 +93,7 @@ class ReforgerStats(commands.Bot):
     
     if self.log_index == -1:
       self.log_index = len(lines) - 1
+      self.start_time = round(time())
       getPlayers(self, lines) # Get all players from this log file to add to self.players / self.gamertags
       return
 

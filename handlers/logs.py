@@ -129,7 +129,6 @@ def readLogFromIndex(
         bot.gamertags.append(gt_data.group("gamertag"))
       continue
 
-  print("done reading logs...")
   return
 
 def getLatestDir(sftp: SFTPClient, remote_path: str) -> str:
