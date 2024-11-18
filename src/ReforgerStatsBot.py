@@ -78,7 +78,7 @@ class ReforgerStats(commands.Bot):
     requests.patch(f"{self.config.WEBHOOK}/messages/{self.message_id}", json=content).status_code
 
   @tasks.loop(seconds=60)
-  async def scrape_file(self) -> None:
+  async def scraper(self: commands.Bot) -> None:
     # Create SSH && SFTP sessions if needed
     if self.ssh is None or self.sftp is None: self.sftp, self.ssh = createSSHClient(self.config)
 
