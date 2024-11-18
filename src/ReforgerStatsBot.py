@@ -8,7 +8,7 @@ from os import listdir, getcwd
 import requests
 
 from handlers.sftp import createSSHClient
-from handlers.logs import getLatestDir, readLogFromIndex
+from handlers.logs import getLatestDir, readLogFromIndex, getPlayers
 from config import Config
 
 class ReforgerStats(commands.Bot):
@@ -27,7 +27,6 @@ class ReforgerStats(commands.Bot):
   async def on_ready(self: commands.Bot) -> None:
     print(f"Logged in as {self.user}")
     await self.load_cogs()
-    # self.scrape_file.start()
 
   async def load_cogs(self: commands.Bot):
     for filename in listdir(f"{getcwd()}/cogs"):
@@ -87,16 +86,17 @@ class ReforgerStats(commands.Bot):
     # Read data
     file:  SFTPFile  = self.sftp.open(f"{remote_path}/{self.log_dir}/console.log")
     lines: list[str] = file.readlines()
-    if self.log_index == -1: self.log_index = len(lines) - 1
-    self.players, self.gamertags = readLogFromIndex(self.log_index, lines, self.players, self.gamertags)
-    self.log_index = len(lines) - 1
     file.close()
+    
+    if self.log_index == -1:
+      self.log_index = len(lines) - 1
+      getPlayers(self, lines) # Get all players from this log file to add to self.players / self.gamertags
+      return
+
+    readLogFromIndex(self, lines)
+    self.log_index = len(lines) - 1
 
     # Send leaderboard embeds via webhook
     content: dict = await self.createLeaderboardEmbed(self.players)
-    if self.message_id == "": await self.webhookSend(content)
+    if self.message_id == "": self.message_id = await self.webhookSend(content)
     else: await self.webhookUpdateMessage(content)
-
-    # Close SSH && SFTP sessions and file
-    self.sftp.close()
-    self.ssh.close()

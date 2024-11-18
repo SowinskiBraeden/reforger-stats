@@ -3,6 +3,7 @@ from re import match
 from paramiko import SFTPClient
 from datetime import datetime
 from typing import Tuple
+from discord.ext import commands
 
 # Regex templates
 class Templates:
@@ -13,74 +14,23 @@ class Templates:
   Admin:       str = r'(?P<time>.*)   NETWORK      : Player \'(?P<gamertag>.*)\' signed in as server admin.'
   Kill:        str = r'(?P<time>.*)   SCRIPT       : ServerAdminTools \| Event serveradmintools_player_killed \| player: (?P<victim_gamertag>.*), instigator: (?P<killer_gamertag>.*), friendly: (?P<friendly>.*)'
 
-# Function to process new logs in an array from a given starting index
-def readLogFromIndex(
-  startingIndex: int,
-  logs:          list[str],
-  identities: list[dict],
-  gamertags: list[str]
-) -> Tuple[list[dict], list[str]]: # Return updated identities
-    
-  # Check each line for data to extract and load into json
-  for i in range(startingIndex, len(logs)):
-    gt_data       = match(Templates.Gamertag, logs[i])
-    identity_data = match(Templates.PlayerID, logs[i])
-    admin_data    = match(Templates.Admin, logs[i])
-    kill_data     = match(Templates.Kill, logs[i])
-
-    # Gather in game player GUID    
-    if identity_data is not None:
-      for identity in identities:
-        if identity["gamertag"] == identity_data.group("gamertag"):
-          identities[identities.index(identity)]["player_guid"] = identity_data.group("player_guid")
-      continue
-
-    # Has player logged into admin/gamemaster
-    if admin_data is not None:
-      for identity in identities:
-        if identity["gamertag"] == admin_data.group("gamertag"):
-          identities[identities.index(identity)]["admin"] = True  
-      continue
-
-    # Contribute to playerts KDR
-    if kill_data is not None:
-      if kill_data.group("friendly") == "true": continue # Ignore friendly kills
-      if kill_data.group("killer_gamertag") == kill_data.group("victim_gamertag"): continue # Ignore suicide
-      for identity in identities:
-        if identity["gamertag"] == kill_data.group("killer_gamertag"):
-          index = identities.index(identity)
-          
-          identities[index]["kills"]          += 1
-          identities[index]["killstreak"]     += 1
-          identities[index]["deathstreak"]    = 0
-          identities[index]["bestKillstreak"] = identities[index]["killstreak"] if identities[index]["killstreak"] > identities[index]["bestKillstreak"] else identities[index]["bestKillstreak"]
-          identities[index]["KDR"]            = round(identities[index]["kills"] / (1 if identities[index]["deaths"] == 0 else identities[index]["deaths"]), 2)
-          pass
-        if identity["gamertag"] == kill_data.group("victim_gamertag"):
-          index = identities.index(identity)
-
-          identities[index]["deaths"] += 1
-          identities[index]["deathstreak"] += 1
-          identities[index]["killstreak"] = 0
-          identities[index]["worstDeathstreak"] = identities[index]["deathstreak"] if identities[index]["deathstreak"] > identities[index]["worstDeathstreak"] else identities[index]["worstDeathstreak"]
-          identities[index]["KDR"] = round(identities[index]["kills"] / (1 if identities[index]["deaths"] == 0 else identities[index]["deaths"]), 2)
-          pass
-
-      continue
-
+# Get initial players data
+def getPlayers(bot: commands.Bot, logs: list[str]) -> None:
+  gt_data = match(Templates.Gamertag, logs[i])
+  for i in range(0, len(logs)):
     # Generate new player data or update connections/IP info
     if gt_data is not None:
       ip_data = match(Templates.IpAddress, logs[i+1])
-      if gt_data.group("gamertag") in gamertags:
-        for identity in identities:
+      if gt_data.group("gamertag") in bot.gamertags:
+        for identity in bot.players:
           if identity["gamertag"] == gt_data.group("gamertag"):
-            index = identities.index(identity)
-            identities[index]["connections"] += 1 
-            identities[index]["ip"]          = ip_data.group("ip_addr")
-            identities[index]["port"]        = ip_data.group("port")
+            index = bot.players.index(identity)
+            bot.players[index]["connections"] += 1 
+            bot.players[index]["ip"]          = ip_data.group("ip_addr")
+            bot.players[index]["port"]        = ip_data.group("port")
       else:
         be_data = match(Templates.BattlEyeGUI, logs[i+3])
-        identities.append({
+        bot.players.append({
           "gamertag":         gt_data.group("gamertag"),
           "ip":               ip_data.group("ip_addr"),
           "port":             ip_data.group("port"),
@@ -96,10 +46,91 @@ def readLogFromIndex(
           "worstDeathstreak": 0,
           "admin":            False
         })
-        gamertags.append(gt_data.group("gamertag"))
+        bot.gamertags.append(gt_data.group("gamertag"))
+
+# Function to process new logs in an array from a given starting index
+def readLogFromIndex(
+  bot: commands.Bot,
+  logs: list[str]
+) -> None:
+
+  # Check each line for data to extract and load into json
+  for i in range(bot.log_index, len(logs)):
+    gt_data       = match(Templates.Gamertag, logs[i])
+    identity_data = match(Templates.PlayerID, logs[i])
+    admin_data    = match(Templates.Admin, logs[i])
+    kill_data     = match(Templates.Kill, logs[i])
+
+    # Gather in game player GUID    
+    if identity_data is not None:
+      for identity in bot.players:
+        if identity["gamertag"] == identity_data.group("gamertag"):
+          bot.players[bot.players.index(identity)]["player_guid"] = identity_data.group("player_guid")
       continue
 
-  return identities, gamertags
+    # Has player logged into admin/gamemaster
+    if admin_data is not None:
+      for identity in bot.players:
+        if identity["gamertag"] == admin_data.group("gamertag"):
+          bot.players[bot.players.index(identity)]["admin"] = True  
+      continue
+
+    # Contribute to playerts KDR
+    if kill_data is not None:
+      if kill_data.group("friendly") == "true": continue # Ignore friendly kills
+      if kill_data.group("killer_gamertag") == kill_data.group("victim_gamertag"): continue # Ignore suicide
+      for identity in bot.players:
+        if identity["gamertag"] == kill_data.group("killer_gamertag"):
+          index = bot.players.index(identity)          
+          bot.players[index]["kills"]          += 1
+          bot.players[index]["killstreak"]     += 1
+          bot.players[index]["deathstreak"]    = 0
+          bot.players[index]["bestKillstreak"] = bot.players[index]["killstreak"] if bot.players[index]["killstreak"] > bot.players[index]["bestKillstreak"] else bot.players[index]["bestKillstreak"]
+          bot.players[index]["KDR"]            = round(bot.players[index]["kills"] / (1 if bot.players[index]["deaths"] == 0 else bot.players[index]["deaths"]), 2)
+
+        if identity["gamertag"] == kill_data.group("victim_gamertag"):
+          index = bot.players.index(identity)
+          bot.players[index]["deaths"] += 1
+          bot.players[index]["deathstreak"] += 1
+          bot.players[index]["killstreak"] = 0
+          bot.players[index]["worstDeathstreak"] = bot.players[index]["deathstreak"] if bot.players[index]["deathstreak"] > bot.players[index]["worstDeathstreak"] else bot.players[index]["worstDeathstreak"]
+          bot.players[index]["KDR"] = round(bot.players[index]["kills"] / (1 if bot.players[index]["deaths"] == 0 else bot.players[index]["deaths"]), 2)
+
+      continue
+
+    # Generate new player data or update connections/IP info
+    if gt_data is not None:
+      ip_data = match(Templates.IpAddress, logs[i+1])
+      if gt_data.group("gamertag") in bot.gamertags:
+        for identity in bot.players:
+          if identity["gamertag"] == gt_data.group("gamertag"):
+            index = bot.players.index(identity)
+            bot.players[index]["connections"] += 1 
+            bot.players[index]["ip"]          = ip_data.group("ip_addr")
+            bot.players[index]["port"]        = ip_data.group("port")
+      else:
+        be_data = match(Templates.BattlEyeGUI, logs[i+3])
+        bot.players.append({
+          "gamertag":         gt_data.group("gamertag"),
+          "ip":               ip_data.group("ip_addr"),
+          "port":             ip_data.group("port"),
+          "player_guid":      None,
+          "battleye_guid":    be_data.group("battleye_guid"),
+          "connections":      1,
+          "kills":            0,
+          "deaths":           0,
+          "KDR":              0,
+          "killstreak":       0,
+          "bestKillstreak":   0,
+          "deathstreak":      0,
+          "worstDeathstreak": 0,
+          "admin":            False
+        })
+        bot.gamertags.append(gt_data.group("gamertag"))
+      continue
+
+  print("done reading logs...")
+  return
 
 def getLatestDir(sftp: SFTPClient, remote_path: str) -> str:
   log_directory:    str       = ""
@@ -117,6 +148,3 @@ def getLatestDir(sftp: SFTPClient, remote_path: str) -> str:
       log_directory = directory
 
   return log_directory
-
-def scrape(bot) -> None:
-  pass

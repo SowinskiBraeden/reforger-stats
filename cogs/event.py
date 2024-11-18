@@ -37,6 +37,11 @@ class Event(app_commands.Group):
     self.bot.gamertags  = []
     self.bot.message_id = ""
     
+    self.sftp.close()
+    self.ssh.close()
+    self.sftp = None
+    self.ssh  = None
+    
     await interaction.response.send_message("Stopping event leaderboard...", ephemeral=True)
 
 async def setup(bot: commands.Bot) -> None:
