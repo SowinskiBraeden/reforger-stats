@@ -54,7 +54,7 @@ class ReforgerStats(commands.Bot):
     description = f"-# from <t:{self.start_time}> to <t:{round(time())}>\n"
     rank = 1
     for player in sorted_players:
-      description += f"**{rank}. {player['gamertag']}**{player['KDR']} KDR - {player['kills']} Kill{'s' if player['kills'] > 1 or player['kills'] == 0 else ''} - {player['deaths']} Death{'s' if player['deaths'] > 1 or player['deaths'] == 0 else ''}\n"
+      description += f"**{rank}. {player['gamertag']}**{player['kills']} Kill{'s' if player['kills'] > 1 or player['kills'] == 0 else ''} - {player['deaths']} Death{'s' if player['deaths'] > 1 or player['deaths'] == 0 else ''} - {player['KDR']} KDR - {player['bestKillstreak']} Best Killstreak\n"
       rank += 1
     
     return {
